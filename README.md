@@ -16,3 +16,5 @@
 - Sıkıntı barı dolarsa Khar chopper'ına atlayıp gider.
 - 3 şikayet = kovuldun.
 - 5'li kombo = deli kahkaha.
+
+**Hemen oyna:** https://berkantkull.github.io/kharin-oteli/
