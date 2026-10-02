@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Khar'ın Oteli</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#0d0a12;color:#eee;font-family:'Press Start 2P',monospace}
+  #wrap{max-width:960px;margin:0 auto;padding:12px 16px;box-sizing:border-box}
+  canvas{width:100%;height:auto;display:block;background:#000;border:4px solid #2a2033;box-sizing:border-box;touch-action:manipulation}
+  .btns{display:flex;gap:12px;margin-top:12px}
+  .btns button{flex:1;font:inherit;font-size:14px;padding:16px 8px;border:4px solid #000;color:#fff;cursor:pointer;box-shadow:0 4px 0 #000;touch-action:manipulation}
+  #bSlap{background:#c0283a}
+  #bKey{background:#2a7a3a}
+  .btns button:active{transform:translateY(4px);box-shadow:none}
+  p.hint{font-size:10px;color:#9a8aa8;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="960" height="540"></canvas>
+  <div class="btns">
+    <button id="bSlap">TOKAT (Z)</button>
+    <button id="bKey">ANAHTAR (X)</button>
+  </div>
+  <p class="hint">Z / SPACE = TOKAT &nbsp;·&nbsp; X / ENTER = ANAHTAR VER</p>
+</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = 320, H = 180, S = 3;
+const FONT = "'Press Start 2P', monospace";
+
+// ---------- SPRITES ----------
+const KHAR = [
+  "....KKKKKKKK....",
+  "...KKRKKKKRKK...",
+  "..KKKKKKKKKKKK..",
+  "..HSSSSSSSSSSH..",
+  "..HSGGGSSGGGSH..",
+  "..HSGWGSSGWGSH..",
+  "..HSSSSSSSSSSH..",
+  "..HSSBSSSSBSSH..",
+  "..HHBBBBBBBBHH..",
+  "..HHBBMMMMBBHH..",
+  "..HHBBBBBBBBHH..",
+  "..H.BBBBBBBB.H..",
+  "..H..BBBBBB..H..",
+  "...VVVBBBBVVV...",
+  "..VVVTTBBTTVVV..",
+  ".SVVVTTTTTTVVVS.",
+  ".AVVVTTTTTTVVVA.",
+  ".SVVVTTTTTTVVVS.",
+  ".AVVVTTTTTTVVVA.",
+  ".SVVVTTTTTTVVVS.",
+];
+const KPAL = {K:'#151515',R:'#d02030',H:'#1c1c1c',S:'#e0a070',G:'#101018',W:'#8af',B:'#4a2a14',M:'#6a0a10',V:'#2a2a2a',T:'#6a1520',A:'#3a6ad0'};
+
+const HEADS = {
+  short:["...HHHHHH...","..HHHHHHHH..","..HSSSSSSH..","..SSKSSKSS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
+  bob:  ["..HHHHHHHH..",".HHHHHHHHHH.",".HHSSSSSSHH.",".HSSKSSKSSH.",".HSSSSSSSSH.",".HHSSMMSSHH.","..H.SSSS.H.."],
+  long: ["...HHHHHH...","..HHHHHHHH..",".HHSSSSSSHH.",".HSSKSSKSSH.",".HSSSSSSSSH.",".HHSKMMKSHH.",".HH.SSSS.HH."],
+  hat:  ["..KKKKKKKK..",".KKKKKKKKKK.","..SSSSSSSS..","..SKKSSKKS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
+  bald: ["............","...SSSSSS...","..SSSSSSSS..","..SSKSSKSS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
+};
+const BODY_TOP = ["..CCCCCCCC..",".CCCDCCDCCC.",".SCCCCCCCCS.",".SCDCCCDCCS.",".SCCCDCCCCS.","..CCCCCCCC..","..PPPPPPPP.."];
+const BODY_A = BODY_TOP.concat(["..PPP..PPP..","..PPP..PPP..","..PPP..PPP..","..FFF..FFF.."]);
+const BODY_B = BODY_TOP.concat(["..PPP..PPP..",".PPP....PPP.",".PPP....PPP.",".FFF....FFF."]);
+
+const TYPES = {
+  turist:  {head:'short', good:'key',  pal:{H:'#d8a040',S:'#f0c090',C:'#ff6aa8',D:'#ffe14a',P:'#e8d8a0',F:'#7a4a2a'},
+            lines:["Oda lütfen!","Havuz nerede?","Selfie çekelim mi?","Kahvaltı var mı?"]},
+  karen:   {head:'bob',   good:'slap', pal:{H:'#f0d060',S:'#f4c8a0',C:'#9a50e0',P:'#2a2a3a',F:'#111'},
+            lines:["MÜDÜRÜ ÇAĞIR!","Bu ne rezalet?!","Ben VIP'im!","Şikayet edeceğim!"]},
+  zilci:   {head:'bald',  good:'slap', pal:{S:'#e8b080',C:'#3a9a4a',P:'#5a4a3a',F:'#222'},
+            lines:["DING DING!","Helloooo?","Kimse yok mu?","Zil çalıyorum!"]},
+  metalci: {head:'long',  good:'key',  pal:{H:'#111',S:'#e0b090',C:'#151515',D:'#ddd',P:'#2a3a6a',F:'#111'},
+            lines:["\\m/ Oda var mı?","Selam kanka!","Slayer açsana!","Metal 4 ever!"]},
+  mufettis:{head:'hat',   good:'key',  pal:{S:'#e8c0a0',C:'#505060',P:'#3a3a48',F:'#111'},
+            lines:["Teftiş!","Hijyen kontrolü.","Hmm... not alıyorum."]},
+};
+for (const k in TYPES) {
+  const p = TYPES[k].pal;
+  p.K = p.K || '#111'; p.M = p.M || '#a03030'; p.W = p.W || '#fff';
+  p.D = p.D || p.C; p.H = p.H || p.S;
+  TYPES[k].rowsA = HEADS[TYPES[k].head].concat(BODY_A);
+  TYPES[k].rowsB = HEADS[TYPES[k].head].concat(BODY_B);
+}
+
+const SKULL = ["..WWWWWW..",".WWWWWWWW.","WWWWWWWWWW","WW..WW..WW","WW..WW..WW","WWWWWWWWWW",".WWW..WWW.","..WWWWWW..","..W.W.W.W.","..WWWWWW.."];
+
+const MUTTERS = ["Sıkıldııım...","Motoruma binsem ya...","METAAAAL!","Kimse yok mu lan?","Hıııh...","Biri gelsin de tokatlayayım.","Iron Maiden açayım mı?","HUEHEHE... sıkıldım."];
+const SLAPW = ["ŞAAAK!","PAAT!","ŞLAK!","TOKAAAT!","ÇAAT!"];
+const KHAR_SLAP = ["AL BAKALIM!","SIRADAKİ!","OTUR YERİNE!","HAHA!","DEFOL!"];
+const pick = a => a[Math.random() * a.length | 0];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ---------- AUDIO ----------
+let AC = null, master;
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0.35; master.connect(AC.destination);
+  } catch (e) { AC = null; }
+}
+function tone(f, dur, type = 'square', vol = .3, when = 0, slide = 0) {
+  if (!AC) return;
+  const t0 = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, slide), t0 + dur);
+  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + dur);
+  o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .02);
+}
+function noise(dur, vol = .5, freq = 1500, when = 0) {
+  if (!AC) return;
+  const t0 = AC.currentTime + when, n = AC.sampleRate * dur | 0;
+  const b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const s = AC.createBufferSource(); s.buffer = b;
+  const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = .8;
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + dur);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t0);
+}
+let distC;
+function distCurve() {
+  if (distC) return distC;
+  const n = 1024; distC = new Float32Array(n);
+  for (let i = 0; i < n; i++) distC[i] = Math.tanh((i * 2 / n - 1) * 20);
+  return distC;
+}
+const sSlap  = () => { noise(.15, 1, 2500); tone(160, .12, 'square', .4, 0, 60); };
+const sWhiff = () => noise(.12, .25, 800);
+const sKey   = () => { tone(880, .08, 'square', .2); tone(1320, .12, 'square', .2, .08); };
+const sDing  = () => { tone(1760, .5, 'sine', .25); tone(2640, .3, 'sine', .08); };
+const sBad   = () => { tone(220, .15, 'sawtooth', .25); tone(160, .3, 'sawtooth', .25, .15); };
+function sLaugh(big) {
+  const n = big ? 12 : 5;
+  for (let i = 0; i < n; i++) {
+    const f = (i % 3 === 2 ? 520 : 300 + Math.random() * 180) * (big && i > n - 4 ? 1.6 : 1);
+    tone(f, .08, 'square', .22, i * .1, f * .7);
+  }
+}
+function sRiff() {
+  if (!AC) return;
+  const ws = AC.createWaveShaper(); ws.curve = distCurve();
+  const g = AC.createGain(); g.gain.value = .16; ws.connect(g); g.connect(master);
+  const pat = [[82.4,.1],[82.4,.1],[82.4,.1],[98,.1],[82.4,.1],[110,.1],[103.8,.3]];
+  let w = 0;
+  for (const [f, d] of pat) {
+    for (const m of [1, 1.5]) {
+      const t0 = AC.currentTime + w, o = AC.createOscillator(), og = AC.createGain();
+      o.type = 'sawtooth'; o.frequency.value = f * m * 2;
+      og.gain.setValueAtTime(.6, t0); og.gain.exponentialRampToValueAtTime(.001, t0 + d * .95);
+      o.connect(og); og.connect(ws); o.start(t0); o.stop(t0 + d);
+    }
+    w += d;
+  }
+}
+const sEngine = () => { tone(50, 2.5, 'sawtooth', .3, 0, 180); tone(52, 2.5, 'square', .12, 0, 175); };
+
+// ---------- STATE ----------
+let best = 0;
+try { best = +localStorage.getItem('khar-best') || 0; } catch (e) {}
+let state = 'title', clock = 0;
+let t, score, boredom, complaints, combo, queue, leavers, floats, parts;
+let spawnT, slapT, laughT, bangT, muttT, shake, bellT, elevT, overT, overReason, chopX, kharGone;
+
+function reset() {
+  t = 0; score = 0; boredom = 30; complaints = 0; combo = 0;
+  queue = []; leavers = []; floats = []; parts = [];
+  spawnT = 1; slapT = 0; laughT = 0; bangT = 0; muttT = 2.5; shake = 0; bellT = 0; elevT = 0;
+  overT = 0; overReason = ''; chopX = 0; kharGone = false;
+}
+reset();
+
+function start() { reset(); state = 'play'; sRiff(); addFloat("İŞ BAŞINA KHAR!", 256, 92, '#ffe14a', 8); }
+
+function addFloat(txt, x, y, col = '#fff', size = 6, life = 1.2) { floats.push({txt, x, y, col, size, life, vy: -18}); }
+function burst(x, y, n, cols) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = 40 + Math.random() * 90;
+    parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: .5 + Math.random() * .4, col: pick(cols)});
+  }
+}
+
+function pickType() {
+  const w = [['turist', 30], ['karen', 22], ['zilci', 18], ['metalci', 15]];
+  if (t > 20) w.push(['mufettis', 9]);
+  let r = Math.random() * w.reduce((a, b) => a + b[1], 0);
+  for (const [k, v] of w) if ((r -= v) < 0) return k;
+  return 'turist';
+}
+function spawn() {
+  if (queue.length >= 5) return;
+  const type = pickType();
+  queue.push({type, x: 14, y: 124, line: pick(TYPES[type].lines), pat: 0,
+    patMax: Math.max(3.5, 8 - t * .04), walk: 0, arrived: false, ding: .4, alpha: 0});
+}
+
+function laugh(big) {
+  laughT = big ? 1.6 : .8;
+  sLaugh(big);
+  addFloat(big ? "HÖHÖHÖ-AHAHUEHEHEEE!" : pick(["HUEHEHE!", "HÖHÖHÖ!", "AHAHAHAAA!"]), 256, 88, '#ffe14a', big ? 8 : 6, big ? 1.8 : 1.1);
+}
+
+function act(kind) {
+  if (state === 'title') { start(); return; }
+  if (state === 'over') { if (overT > 1) start(); return; }
+  if (kind === 'slap') slapT = .2;
+  const g = queue[0];
+  if (!g || !g.arrived) {
+    if (kind === 'slap') { sWhiff(); addFloat(pick(["Hava tokatı!", "Fıss!", "Kimse yok..."]), 200, 112, '#aaa'); }
+    return;
+  }
+  queue.shift();
+  const right = TYPES[g.type].good === kind;
+  if (kind === 'slap') {
+    sSlap(); shake = .25; burst(180, 128, 14, ['#fff', '#ffe14a', '#ff5050']);
+    g.mode = 'fly'; g.vx = -260 - Math.random() * 80; g.vy = -150; g.rot = 0; g.vr = -12;
+    leavers.push(g);
+    addFloat(pick(SLAPW), 178, 108, '#fff', 10, .9);
+    if (right) {
+      const p = g.type === 'karen' ? 30 : 20;
+      score += p; boredom -= 25; combo++;
+      addFloat('+' + p, 160, 122, '#7f7');
+      if (Math.random() < .5) addFloat(pick(KHAR_SLAP), 256, 92, '#ffb050');
+    } else {
+      complaints += g.type === 'mufettis' ? 2 : 1; boredom -= 15; combo = 0; sBad();
+      addFloat(g.type === 'mufettis' ? "RAPOR EDİLDİN!" : "ŞİKAYET!", 160, 96, '#ff4040', 8, 1.5);
+    }
+  } else {
+    sKey(); g.mode = 'key'; g.walk = 0; leavers.push(g);
+    if (right) {
+      const p = g.type === 'metalci' ? 30 : 15;
+      score += p; combo++; boredom -= g.type === 'metalci' ? 30 : 12;
+      addFloat('+' + p, 160, 116, '#7f7');
+      if (g.type === 'metalci') { bangT = 1.3; sRiff(); addFloat("\\m/ METAAAL! \\m/", 256, 92, '#ff5050', 7, 1.5); }
+    } else {
+      boredom += 15; combo = 0;
+      addFloat("Bunu tokatlamalıydın...", 200, 96, '#aaa', 5, 1.5);
+    }
+  }
+  if (right && combo > 0 && combo % 5 === 0) {
+    laugh(true); score += 50; boredom -= 40; sRiff();
+    addFloat('KOMBO x' + combo + '! +50', 160, 70, '#ffe14a', 8, 1.6);
+  } else if (right && kind === 'slap' && Math.random() < .35) laugh(false);
+  boredom = clamp(boredom, 0, 100);
+  if (complaints >= 3) gameOver('fired');
+}
+
+function gameOver(reason) {
+  state = 'over'; overReason = reason; overT = 0;
+  if (score > best) { best = score; try { localStorage.setItem('khar-best', best); } catch (e) {} }
+  if (reason === 'bored') { kharGone = true; sEngine(); addFloat("VROOOOOM!", 124, 90, '#ff5050', 8, 2); }
+  else { sBad(); tone(110, .8, 'sawtooth', .25, .4, 40); }
+}
+
+// ---------- UPDATE ----------
+function update(dt) {
+  clock += dt;
+  slapT = Math.max(0, slapT - dt); laughT = Math.max(0, laughT - dt); bangT = Math.max(0, bangT - dt);
+  shake = Math.max(0, shake - dt); bellT = Math.max(0, bellT - dt); elevT = Math.max(0, elevT - dt);
+
+  for (const f of floats) { f.y += f.vy * dt; f.life -= dt; }
+  floats = floats.filter(f => f.life > 0);
+  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.life -= dt; }
+  parts = parts.filter(p => p.life > 0);
+
+  for (const g of leavers) {
+    if (g.mode === 'fly') {
+      g.x += g.vx * dt; g.y += g.vy * dt; g.vy += 420 * dt; g.rot += g.vr * dt;
+      if (g.y > 124 && g.vy > 0) { g.y = 124; g.vy *= -.45; g.vx *= .7; g.vr *= .6; }
+      if (g.x < -40) g.dead = true;
+    } else if (g.mode === 'key') {
+      g.walk += dt;
+      if (g.x > 59) g.x = Math.max(59, g.x - 70 * dt);
+      else { g.mode = 'elev'; elevT = 1.2; tone(1320, .3, 'sine', .12); }
+    } else if (g.mode === 'elev' || g.mode === 'gone') {
+      g.alpha -= dt * 2; if (g.alpha <= 0) g.dead = true;
+    } else if (g.mode === 'storm') {
+      g.walk += dt; g.x -= 80 * dt;
+      if (g.x < 16) g.mode = 'gone';
+    }
+  }
+  leavers = leavers.filter(g => !g.dead);
+
+  if (state === 'over') {
+    overT += dt;
+    if (overReason === 'bored') chopX += dt * (6 + overT * 18);
+    return;
+  }
+  if (state !== 'play') return;
+
+  t += dt;
+  boredom += (4 + t * .05) * dt;
+  spawnT -= dt;
+  if (spawnT <= 0) { spawn(); spawnT = Math.max(1.1, 3.2 - t * .03) * (.7 + Math.random() * .6); }
+
+  const speed = 45 + t * .3;
+  queue.forEach((g, i) => {
+    const tx = 168 - i * 28;
+    g.alpha = Math.min(1, g.alpha + dt * 3);
+    if (g.x < tx) { g.x = Math.min(tx, g.x + speed * dt); g.walk += dt; } else g.walk = 0;
+    g.arrived = i === 0 && g.x >= tx;
+  });
+  const g = queue[0];
+  if (g && g.arrived) {
+    g.pat += dt;
+    if (g.type === 'zilci') {
+      g.ding -= dt;
+      if (g.ding <= 0) { g.ding = .8; sDing(); bellT = .25; boredom += 2; addFloat('DING!', 206, 122, '#ffe14a', 5, .7); }
+    }
+    if (g.pat >= g.patMax) {
+      queue.shift(); g.mode = 'storm'; g.walk = 0; leavers.push(g);
+      if (TYPES[g.type].good === 'key') {
+        complaints++; combo = 0; sBad();
+        addFloat("Berbat otel!", 150, 100, '#ff4040', 6, 1.4);
+        if (complaints >= 3) { gameOver('fired'); return; }
+      } else {
+        boredom += 10; combo = 0;
+        addFloat("Tokatı kaçırdın!", 150, 100, '#aaa', 5, 1.4);
+      }
+    }
+  } else {
+    muttT -= dt;
+    if (muttT <= 0) {
+      muttT = 3 + Math.random() * 3;
+      if (boredom > 75) addFloat("ÇOK SIKILDIM LAN!", 256, 92, '#ff4040', 6, 1.6);
+      else addFloat(pick(MUTTERS), 256, 92, '#ccc', 5, 1.6);
+    }
+  }
+  boredom = clamp(boredom, 0, 100);
+  if (boredom >= 100) gameOver('bored');
+}
+
+// ---------- DRAW ----------
+function rect(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+function drawSprite(rows, pal, x, y, sc = 2) {
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    for (let c = 0; c < row.length; c++) {
+      const col = pal[row[c]];
+      if (!col) continue;
+      ctx.fillStyle = col; ctx.fillRect(x + c * sc, y + r * sc, sc, sc);
+    }
+  }
+}
+function txt(s, x, y, size, col, align = 'left', ol = '#000') {
+  ctx.font = size + 'px ' + FONT; ctx.textAlign = align; ctx.textBaseline = 'top';
+  if (ol) { ctx.fillStyle = ol; for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) ctx.fillText(s, x + dx * .67, y + dy * .67); }
+  ctx.fillStyle = col; ctx.fillText(s, x, y);
+}
+
+function wheel(cx, cy) {
+  rect(cx - 3, cy - 5, 6, 10, '#111'); rect(cx - 5, cy - 3, 10, 6, '#111'); rect(cx - 4, cy - 4, 8, 8, '#111');
+  rect(cx - 1, cy - 1, 2, 2, '#999');
+}
+function drawChopper(x, y, rider) {
+  wheel(x + 5, y + 12); wheel(x + 31, y + 12);
+  rect(x + 5, y + 6, 16, 2, '#333');
+  rect(x + 3, y + 11, 13, 2, '#ccc');
+  rect(x + 11, y + 7, 7, 5, '#888');
+  rect(x + 6, y + 4, 8, 2, '#2a1a10');
+  rect(x + 13, y + 2, 7, 4, '#c02030');
+  for (let i = 0; i < 10; i++) rect(x + 21 + i, y + 2 + i, 2, 2, '#ccc');
+  rect(x + 20, y - 6, 1, 8, '#ccc'); rect(x + 18, y - 6, 3, 1, '#ccc');
+  rect(x + 22, y + 1, 2, 2, '#ffd');
+  if (rider) {
+    rect(x + 7, y - 4, 6, 8, '#151515');
+    rect(x + 8, y - 9, 5, 5, '#e0a070');
+    rect(x + 8, y - 10, 5, 2, '#151515');
+    rect(x + 11, y - 6, 3, 3, '#4a2a14');
+    rect(x + 12, y - 3, 8, 2, '#151515');
+  }
+}
+
+function drawRoom() {
+  // wall
+  rect(0, 0, W, 128, '#3a2448');
+  for (let x = 0; x < W; x += 12) rect(x, 0, 6, 104, '#432a52');
+  rect(0, 104, W, 24, '#2a1a30'); rect(0, 102, W, 2, '#5a3a6a');
+  // floor
+  for (let y = 128; y < H; y += 8) for (let x = 0; x < W; x += 16)
+    rect(x, y, 16, 8, ((x / 16 + (y - 128) / 8) & 1) ? '#3a2a22' : '#2e2019');
+  rect(0, 128, W, 1, '#1a1010');
+
+  // neon sign
+  ctx.save();
+  const on = Math.sin(clock * 13) > -.85;
+  ctx.shadowColor = '#ff3a8a'; ctx.shadowBlur = on ? 12 : 0;
+  txt("OTEL CEHENNEM", 160, 16, 8, on ? '#ff5aa0' : '#6a2a48', 'center', null);
+  ctx.restore();
+
+  // window with chopper
+  rect(98, 28, 52, 58, '#1a1020');
+  ctx.save();
+  ctx.beginPath(); ctx.rect(100, 30, 48, 54); ctx.clip();
+  rect(100, 30, 48, 48, '#24346a');
+  rect(140, 34, 4, 4, '#ffeeb0');
+  rect(110, 40, 1, 1, '#fff'); rect(128, 36, 1, 1, '#fff'); rect(120, 50, 1, 1, '#fff');
+  rect(100, 78, 48, 6, '#333');
+  drawChopper(108 + chopX, 62, kharGone);
+  ctx.restore();
+  rect(123, 30, 2, 54, '#1a1020');
+
+  // door
+  rect(6, 60, 36, 68, '#5a3a20');
+  rect(9, 63, 30, 65, '#7a4a28');
+  rect(13, 67, 22, 24, '#6ac');
+  rect(13, 67, 22, 2, '#9de');
+  rect(33, 98, 3, 4, '#e0c040');
+  txt("GİRİŞ", 24, 52, 5, '#e0c040', 'center');
+
+  // elevator
+  rect(50, 58, 40, 70, '#888');
+  rect(53, 61, 34, 67, '#151515');
+  const o = elevT > 0 ? Math.min(1, (1.2 - elevT) * 4, elevT * 3) : 0;
+  const dw = 17 * (1 - o);
+  rect(53, 61, dw, 67, '#aab'); rect(87 - dw, 61, dw, 67, '#aab');
+  rect(53 + dw - 1, 61, 1, 67, '#778'); rect(87 - dw, 61, 1, 67, '#778');
+  rect(64, 52, 12, 5, '#222'); rect(68, 53, 4, 3, elevT > 0 ? '#ff5' : '#553');
+
+  // metal poster
+  rect(282, 26, 32, 46, '#0a0a0a'); rect(282, 26, 32, 1, '#555');
+  drawSprite(SKULL, {W: '#eee'}, 288, 31, 2);
+  txt("\\m/", 298, 56, 6, '#d02030', 'center', null);
+  txt("METAL", 298, 64, 4, '#d02030', 'center', null);
+}
+
+function drawKhar() {
+  if (kharGone) return;
+  let ox = 0, oy = 0;
+  if (bangT > 0) oy = Math.sin(bangT * 30) > 0 ? 4 : 0;
+  if (laughT > 0) { ox = Math.sin(clock * 60) > 0 ? 1 : -1; oy += Math.sin(clock * 25) > 0 ? -1 : 0; }
+  const x = 240 + ox, y = 102 + oy;
+  drawSprite(KHAR, KPAL, x, y, 2);
+  if (laughT > 0) {
+    rect(x + 11, y + 17, 10, 7, '#300');
+    rect(x + 12, y + 17, 8, 2, '#fff');
+    rect(x + 13, y + 22, 6, 2, '#c33');
+  } else if (boredom > 70 && state === 'play') {
+    rect(x + 12, y + 18, 8, 2, '#300');
+  }
+  if (slapT > 0) {
+    const ax = 184, ay = y + 26;
+    rect(ax, ay, 58, 6, KPAL.S);
+    for (let i = 0; i < 6; i++) rect(ax + 8 + i * 8, ay + 1 + (i & 1) * 2, 3, 2, KPAL.A);
+    rect(ax - 8, ay - 3, 10, 12, KPAL.S);
+    rect(ax - 8, ay - 3, 2, 12, '#c08050');
+    for (let i = 0; i < 3; i++) rect(ax + 20 + i * 6, ay - 8 + i * 9, 14, 1, '#fff');
+  }
+}
+
+function drawDesk() {
+  rect(192, 140, 128, 4, '#a0682a');
+  rect(192, 144, 128, 22, '#6a3a18');
+  for (let x = 198; x < 320; x += 30) rect(x, 148, 24, 14, '#5a3014');
+  rect(232, 150, 48, 9, '#e0c040');
+  txt("RESEPSİYON", 256, 152, 4, '#3a2010', 'center', null);
+  const by = bellT > 0 ? -2 : 0;
+  rect(200, 138, 12, 2, '#555');
+  rect(202, 133 + by, 8, 5, '#e0c040'); rect(203, 132 + by, 6, 1, '#e0c040'); rect(205, 130 + by, 2, 2, '#c0a020');
+}
+
+function drawGuest(g) {
+  const T = TYPES[g.type];
+  const fr = g.walk > 0 ? (Math.floor(g.walk * 8) % 2) : 0;
+  ctx.save();
+  ctx.globalAlpha = clamp(g.alpha ?? 1, 0, 1);
+  ctx.translate(g.x + 12, g.y + 18 - fr);
+  if (g.rot) ctx.rotate(g.rot);
+  ctx.translate(-12, -18);
+  drawSprite(fr ? T.rowsB : T.rowsA, T.pal, 0, 0, 2);
+  if (g.type === 'mufettis') { rect(18, 18, 7, 9, '#7a4a28'); rect(19, 19, 5, 7, '#fff'); rect(20, 21, 3, 1, '#888'); rect(20, 23, 3, 1, '#888'); }
+  if (g.type === 'metalci') { rect(2, 14, 2, 6, '#111'); rect(20, 14, 2, 6, '#111'); }
+  if (g.mode === 'key' || g.mode === 'elev') { rect(9, -8, 4, 4, '#ffe14a'); rect(13, -7, 6, 2, '#ffe14a'); rect(17, -5, 2, 2, '#ffe14a'); }
+  if (g.mode === 'storm') { rect(11, -10, 2, 6, '#ff4040'); rect(11, -3, 2, 2, '#ff4040'); }
+  if (g.mode === 'fly') for (let i = 0; i < 3; i++) rect(4 + i * 7, -4 + Math.sin(clock * 20 + i) * 2, 2, 2, '#ffe14a');
+  ctx.restore();
+}
+
+function drawBubble() {
+  const g = queue[0];
+  if (!g || !g.arrived) return;
+  ctx.font = '5px ' + FONT;
+  const w = ctx.measureText(g.line).width + 8;
+  const bx = clamp(g.x + 12 - w / 2, 2, 190 - w), by = 100;
+  rect(bx - 1, by - 1, w + 2, 14, '#000');
+  rect(bx, by, w, 12, '#fff');
+  rect(g.x + 10, by + 12, 4, 2, '#fff'); rect(g.x + 11, by + 14, 2, 2, '#fff');
+  txt(g.line, bx + 4, by + 4, 5, '#000', 'left', null);
+  const r = 1 - g.pat / g.patMax;
+  rect(g.x, 117, 24, 3, '#000');
+  rect(g.x + 1, 118, 22 * r, 1, r > .5 ? '#5f5' : r > .25 ? '#fd4' : '#f44');
+}
+
+function drawHUD() {
+  txt("PUAN " + score, 4, 4, 6, '#fff');
+  txt("ŞİKAYET", 252, 4, 5, '#ff8080', 'right');
+  for (let i = 0; i < 3; i++) {
+    const on = i < complaints;
+    rect(256 + i * 20, 2, 16, 9, '#000');
+    rect(257 + i * 20, 3, 14, 7, on ? '#d02030' : '#3a3a3a');
+    if (on) txt("X", 264 + i * 20, 4, 5, '#fff', 'center', null);
+  }
+  txt("SIKINTI", 4, 169, 6, boredom > 75 && Math.sin(clock * 12) > 0 ? '#ff4040' : '#fff');
+  rect(52, 168, 124, 9, '#000');
+  const bc = boredom > 75 ? '#ff3030' : boredom > 50 ? '#ffb030' : '#50d060';
+  rect(54, 170, 120 * boredom / 100, 5, bc);
+  if (combo > 1) txt("KOMBO x" + combo, 316, 169, 6, '#ffe14a', 'right');
+}
+
+function drawTitle() {
+  rect(0, 0, W, H, 'rgba(10,6,16,.86)');
+  txt("KHAR'IN OTELİ", 160, 10, 14, '#ffe14a', 'center');
+  txt("8-BIT RESEPSİYON KAOSU", 160, 30, 6, '#ff5aa0', 'center');
+  drawSprite(KHAR, KPAL, 18, 46, 3);
+  txt("HUEHEHE!", 42, 108, 5, '#ffe14a', 'center');
+  const lineup = [['karen', 'KAREN', 'slap'], ['zilci', 'ZİLCİ', 'slap'], ['turist', 'TURİST', 'key'], ['metalci', 'METALCİ', 'key'], ['mufettis', 'MÜFETTİŞ', 'key']];
+  lineup.forEach(([type, name, act], i) => {
+    const x = 92 + i * 44;
+    drawGuest({type, x, y: 48, walk: 0, alpha: 1});
+    txt(name, x + 12, 88, 4, '#ddd', 'center');
+    txt(act === 'slap' ? "TOKAT!" : "ANAHTAR", x + 12, 96, 5, act === 'slap' ? '#ff5050' : '#60e070', 'center');
+  });
+  txt("Z / SPACE = TOKAT   X / ENTER = ANAHTAR", 160, 118, 5, '#fff', 'center');
+  txt("Sıkıntı dolarsa Khar motoruna atlar gider!", 160, 130, 5, '#ccc', 'center');
+  txt("3 şikayet = KOVULDUN  ·  5 kombo = DELİ KAHKAHA", 160, 139, 4, '#ccc', 'center');
+  txt("Müfettişi tokatlama! (2 şikayet)", 160, 147, 4, '#ff8080', 'center');
+  if (Math.sin(clock * 6) > -.3) txt("BAŞLAMAK İÇİN Z'YE BAS", 160, 158, 7, '#ffe14a', 'center');
+  if (best) txt("REKOR " + best, 160, 171, 5, '#9a8aa8', 'center');
+}
+
+function drawOver() {
+  let a = .8;
+  if (overReason === 'bored') a = clamp((overT - 2.2) * 1.5, 0, .82);
+  if (a <= 0) return;
+  ctx.globalAlpha = a / .82;
+  rect(0, 0, W, H, 'rgba(10,6,16,.82)');
+  if (overReason === 'bored') {
+    txt("KHAR SIKILDI!", 160, 40, 14, '#ff5050', 'center');
+    txt("Chopper'ına atlayıp gitti. VROOOM!", 160, 64, 6, '#ddd', 'center');
+  } else {
+    txt("KOVULDUN!", 160, 40, 14, '#ff5050', 'center');
+    txt("Çok fazla şikayet geldi...", 160, 64, 6, '#ddd', 'center');
+  }
+  txt("PUAN  " + score, 160, 88, 8, '#fff', 'center');
+  txt("REKOR " + best, 160, 102, 8, score >= best && score > 0 ? '#ffe14a' : '#aaa', 'center');
+  if (overT > 1 && Math.sin(clock * 6) > -.3) txt("TEKRAR İÇİN Z'YE BAS", 160, 132, 7, '#ffe14a', 'center');
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  const sx = shake > 0 ? (Math.random() * 4 - 2) : 0, sy = shake > 0 ? (Math.random() * 4 - 2) : 0;
+  ctx.setTransform(S, 0, 0, S, sx * S, sy * S);
+  drawRoom();
+  drawKhar();
+  drawDesk();
+  if (state !== 'title') {
+    for (let i = queue.length - 1; i >= 0; i--) drawGuest(queue[i]);
+    for (const g of leavers) drawGuest(g);
+    if (state === 'play') drawBubble();
+    for (const p of parts) rect(p.x, p.y, 2, 2, p.col);
+    for (const f of floats) {
+      ctx.globalAlpha = Math.min(1, f.life / .3);
+      ctx.font = f.size + 'px ' + FONT;
+      const w = ctx.measureText(f.txt).width;
+      txt(f.txt, clamp(f.x, w / 2 + 2, W - w / 2 - 2), f.y, f.size, f.col, 'center');
+    }
+    ctx.globalAlpha = 1;
+    drawHUD();
+  }
+  if (state === 'title') drawTitle();
+  if (state === 'over') drawOver();
+}
+
+// ---------- INPUT ----------
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' || k === ' ' || k === 'a') { e.preventDefault(); initAudio(); act('slap'); }
+  else if (k === 'x' || k === 'enter' || k === 's') { e.preventDefault(); initAudio(); act('key'); }
+});
+for (const [id, kind] of [['bSlap', 'slap'], ['bKey', 'key']])
+  document.getElementById(id).addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); act(kind); });
+cv.addEventListener('pointerdown', () => { if (state !== 'play') { initAudio(); act('slap'); } });
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
