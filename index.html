@@ -10,9 +10,10 @@
   #wrap{max-width:960px;margin:0 auto;padding:12px 16px;box-sizing:border-box}
   canvas{width:100%;height:auto;display:block;background:#000;border:4px solid #2a2033;box-sizing:border-box;touch-action:manipulation}
   .btns{display:flex;gap:12px;margin-top:12px}
-  .btns button{flex:1;font:inherit;font-size:14px;padding:16px 8px;border:4px solid #000;color:#fff;cursor:pointer;box-shadow:0 4px 0 #000;touch-action:manipulation}
+  .btns button{flex:1;font:inherit;font-size:13px;padding:16px 6px;border:4px solid #000;color:#fff;cursor:pointer;box-shadow:0 4px 0 #000;touch-action:manipulation}
   #bSlap{background:#c0283a}
   #bKey{background:#2a7a3a}
+  #bGtr{background:#6a3aa8}
   .btns button:active{transform:translateY(4px);box-shadow:none}
   p.hint{font-size:10px;color:#9a8aa8;text-align:center;line-height:1.8}
 </style>
@@ -22,9 +23,10 @@
   <canvas id="c" width="960" height="540"></canvas>
   <div class="btns">
     <button id="bSlap">TOKAT (Z)</button>
+    <button id="bGtr">GİTAR (C)</button>
     <button id="bKey">ANAHTAR (X)</button>
   </div>
-  <p class="hint">Z / SPACE = TOKAT &nbsp;·&nbsp; X / ENTER = ANAHTAR VER</p>
+  <p class="hint">Z / SPACE = TOKAT &nbsp;·&nbsp; X / ENTER = ANAHTAR VER &nbsp;·&nbsp; C = HAVA GİTARI</p>
 </div>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -40,21 +42,24 @@ const KHAR = [
   "..HSGGGSSGGGSH..",
   "..HSGWGSSGWGSH..",
   "..HSSSSSSSSSSH..",
-  "..HSSBSSSSBSSH..",
-  "..HHBBBBBBBBHH..",
-  "..HHBBMMMMBBHH..",
-  "..HHBBBBBBBBHH..",
-  "..H.BBBBBBBB.H..",
-  "..H..BBBBBB..H..",
-  "...VVVBBBBVVV...",
-  "..VVVTTBBTTVVV..",
+  "..HSBBSSSSBBSH..",
+  "..HSBBBBBBBBSH..",
+  "..HSBBMMMMBBSH..",
+  "..HSSBBBBBBSSH..",
+  "..H..SBBBBS..H..",
+  "..H..SSSSSS..H..",
+  "...VVVTSSTVVV...",
+  "..VVVTTTTTTVVV..",
   ".SVVVTTTTTTVVVS.",
   ".AVVVTTTTTTVVVA.",
   ".SVVVTTTTTTVVVS.",
   ".AVVVTTTTTTVVVA.",
   ".SVVVTTTTTTVVVS.",
 ];
-const KPAL = {K:'#151515',R:'#d02030',H:'#1c1c1c',S:'#e0a070',G:'#101018',W:'#8af',B:'#4a2a14',M:'#6a0a10',V:'#2a2a2a',T:'#6a1520',A:'#3a6ad0'};
+const KLEGS_A = ["..VVVTTTTTTVVV..","..KKKKKKYKKKKK..","..JJJJJJJJJJJJ..","..JJJJJ..JJJJJ..","..JJJJJ..JJJJJ..","..JJJJ....JJJJ..","..JJJJ....JJJJ..",".KKKKK....KKKKK."];
+const KLEGS_B = ["..VVVTTTTTTVVV..","..KKKKKKYKKKKK..","..JJJJJJJJJJJJ..","..JJJJJ..JJJJJ..",".JJJJ.....JJJJ..",".JJJJ......JJJJ.",".JJJJ......JJJJ.","KKKKK......KKKKK"];
+const KFULL_A = KHAR.concat(KLEGS_A), KFULL_B = KHAR.concat(KLEGS_B);
+const KPAL = {K:'#151515',R:'#d02030',H:'#121212',S:'#e0a070',G:'#101018',W:'#8af',B:'#202020',M:'#6a0a10',V:'#2a2a2a',T:'#6a1520',A:'#3a6ad0',J:'#2a3a5a',Y:'#e0c040'};
 
 const HEADS = {
   short:["...HHHHHH...","..HHHHHHHH..","..HSSSSSSH..","..SSKSSKSS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
@@ -62,6 +67,7 @@ const HEADS = {
   long: ["...HHHHHH...","..HHHHHHHH..",".HHSSSSSSHH.",".HSSKSSKSSH.",".HSSSSSSSSH.",".HHSKMMKSHH.",".HH.SSSS.HH."],
   hat:  ["..KKKKKKKK..",".KKKKKKKKKK.","..SSSSSSSS..","..SKKSSKKS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
   bald: ["............","...SSSSSS...","..SSSSSSSS..","..SSKSSKSS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
+  cap:  ["....RRRR....","...RRRRRR...","..HSSSSSSH..","..SSKSSKSS..","..SSSSSSSS..","...SSMMSS...","....SSSS...."],
 };
 const BODY_TOP = ["..CCCCCCCC..",".CCCDCCDCCC.",".SCCCCCCCCS.",".SCDCCCDCCS.",".SCCCDCCCCS.","..CCCCCCCC..","..PPPPPPPP.."];
 const BODY_A = BODY_TOP.concat(["..PPP..PPP..","..PPP..PPP..","..PPP..PPP..","..FFF..FFF.."]);
@@ -78,6 +84,7 @@ const TYPES = {
             lines:["\\m/ Oda var mı?","Selam kanka!","Slayer açsana!","Metal 4 ever!"]},
   mufettis:{head:'hat',   good:'key',  pal:{S:'#e8c0a0',C:'#505060',P:'#3a3a48',F:'#111'},
             lines:["Teftiş!","Hijyen kontrolü.","Hmm... not alıyorum."]},
+  necmi:   {head:'cap',   good:null,   pal:{R:'#c02030',H:'#5a3a1a',S:'#f0c090',C:'#b02030',D:'#e0c040',P:'#222',F:'#111'}, lines:[]},
 };
 for (const k in TYPES) {
   const p = TYPES[k].pal;
@@ -89,7 +96,7 @@ for (const k in TYPES) {
 
 const SKULL = ["..WWWWWW..",".WWWWWWWW.","WWWWWWWWWW","WW..WW..WW","WW..WW..WW","WWWWWWWWWW",".WWW..WWW.","..WWWWWW..","..W.W.W.W.","..WWWWWW.."];
 
-const MUTTERS = ["Sıkıldııım...","Motoruma binsem ya...","METAAAAL!","Kimse yok mu lan?","Hıııh...","Biri gelsin de tokatlayayım.","Iron Maiden açayım mı?","HUEHEHE... sıkıldım."];
+const MUTTERS = ["Sıkıldııım...","Motoruma binsem ya...","METAAAAL!","Kimse yok mu lan?","Hıııh...","Biri gelsin de tokatlayayım.","STYGIAN açayım mı?","HUEHEHE... sıkıldım."];
 const SLAPW = ["ŞAAAK!","PAAT!","ŞLAK!","TOKAAAT!","ÇAAT!"];
 const KHAR_SLAP = ["AL BAKALIM!","SIRADAKİ!","OTUR YERİNE!","HAHA!","DEFOL!"];
 const pick = a => a[Math.random() * a.length | 0];
@@ -129,7 +136,22 @@ function distCurve() {
   for (let i = 0; i < n; i++) distC[i] = Math.tanh((i * 2 / n - 1) * 20);
   return distC;
 }
+// distorted guitar note with a little vibrato
+function dNote(f, d, when = 0, vol = .5) {
+  if (!AC) return;
+  const ws = AC.createWaveShaper(); ws.curve = distCurve();
+  const g = AC.createGain(); g.gain.value = .12; ws.connect(g); g.connect(master);
+  const t0 = AC.currentTime + when, o = AC.createOscillator(), og = AC.createGain();
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t0);
+  const v = AC.createOscillator(), vg = AC.createGain();
+  v.frequency.value = 7; vg.gain.value = f * .02; v.connect(vg); vg.connect(o.frequency);
+  og.gain.setValueAtTime(vol, t0); og.gain.exponentialRampToValueAtTime(.001, t0 + d);
+  o.connect(og); og.connect(ws); o.start(t0); o.stop(t0 + d); v.start(t0); v.stop(t0 + d);
+}
 const sSlap  = () => { noise(.15, 1, 2500); tone(160, .12, 'square', .4, 0, 60); };
+const sPunch = () => { noise(.25, 1.2, 600); tone(90, .3, 'square', .5, 0, 40); };
+const sKlang = () => { tone(620, .35, 'square', .15, 0, 300); noise(.3, .4, 3000); };
+const sGrowl = () => { tone(120, .5, 'sawtooth', .25, 0, 70); tone(125, .5, 'square', .1, 0, 75); };
 const sWhiff = () => noise(.12, .25, 800);
 const sKey   = () => { tone(880, .08, 'square', .2); tone(1320, .12, 'square', .2, .08); };
 const sDing  = () => { tone(1760, .5, 'sine', .25); tone(2640, .3, 'sine', .08); };
@@ -157,20 +179,27 @@ function sRiff() {
     w += d;
   }
 }
+function sGuitar() {
+  dNote(164.8, .6); dNote(247, .6);
+  const solo = [330, 392, 440, 494, 587, 659, 587, 494, 659, 784, 880, 988];
+  solo.forEach((f, i) => dNote(f, .16, .25 + i * .12));
+  dNote(1318, .8, .25 + solo.length * .12);
+}
 const sEngine = () => { tone(50, 2.5, 'sawtooth', .3, 0, 180); tone(52, 2.5, 'square', .12, 0, 175); };
 
 // ---------- STATE ----------
 let best = 0;
 try { best = +localStorage.getItem('khar-best') || 0; } catch (e) {}
 let state = 'title', clock = 0;
-let t, score, boredom, complaints, combo, queue, leavers, floats, parts;
-let spawnT, slapT, laughT, bangT, muttT, shake, bellT, elevT, overT, overReason, chopX, kharGone;
+let t, score, boredom, complaints, combo, queue, leavers, floats, parts, notes;
+let spawnT, slapT, laughT, bangT, muttT, shake, bellT, elevT, overT, overReason;
+let guitarT, guitarCD, noteT, esc;
 
 function reset() {
   t = 0; score = 0; boredom = 30; complaints = 0; combo = 0;
-  queue = []; leavers = []; floats = []; parts = [];
+  queue = []; leavers = []; floats = []; parts = []; notes = [];
   spawnT = 1; slapT = 0; laughT = 0; bangT = 0; muttT = 2.5; shake = 0; bellT = 0; elevT = 0;
-  overT = 0; overReason = ''; chopX = 0; kharGone = false;
+  overT = 0; overReason = ''; guitarT = 0; guitarCD = 0; noteT = 0; esc = null;
 }
 reset();
 
@@ -204,9 +233,21 @@ function laugh(big) {
   addFloat(big ? "HÖHÖHÖ-AHAHUEHEHEEE!" : pick(["HUEHEHE!", "HÖHÖHÖ!", "AHAHAHAAA!"]), 256, 88, '#ffe14a', big ? 8 : 6, big ? 1.8 : 1.1);
 }
 
+function airGuitar() {
+  if (guitarT > 0) return;
+  if (guitarCD > 0) { addFloat("Gitar soğuyor...", 256, 92, '#aaa', 5, 1); return; }
+  guitarT = 2.2; guitarCD = 12; noteT = 0;
+  boredom = clamp(boredom - 35, 0, 100); score += 10;
+  sGuitar();
+  addFloat("HAVA GİTARI SOLOSU!", 256, 86, '#c080ff', 7, 1.6);
+}
+
 function act(kind) {
   if (state === 'title') { start(); return; }
+  if (state === 'escape') { if (esc.t > 1) finishEscape(); return; }
   if (state === 'over') { if (overT > 1) start(); return; }
+  if (kind === 'guitar') { airGuitar(); return; }
+  guitarT = 0;
   if (kind === 'slap') slapT = .2;
   const g = queue[0];
   if (!g || !g.arrived) {
@@ -249,23 +290,70 @@ function act(kind) {
   if (complaints >= 3) gameOver('fired');
 }
 
-function gameOver(reason) {
-  state = 'over'; overReason = reason; overT = 0;
+function saveBest() {
   if (score > best) { best = score; try { localStorage.setItem('khar-best', best); } catch (e) {} }
-  if (reason === 'bored') { kharGone = true; sEngine(); addFloat("VROOOOOM!", 124, 90, '#ff5050', 8, 2); }
-  else { sBad(); tone(110, .8, 'sawtooth', .25, .4, 40); }
 }
+function gameOver(reason) {
+  saveBest(); overReason = reason; overT = 0;
+  if (reason === 'bored') {
+    // cut to the street: Khar storms out to his chopper
+    state = 'escape'; floats = []; parts = []; notes = []; laughT = 0; shake = 0;
+    esc = {t: 0, kx: 40, walking: false, punchT: 0, mounted: false, bikeX: 176, bikeV: 0,
+      cw: {x: 44, y: 124, vis: false, fly: false, inCan: false, vx: 0, vy: 0, rot: 0}};
+  } else {
+    state = 'over'; sBad(); tone(110, .8, 'sawtooth', .25, .4, 40);
+  }
+}
+function finishEscape() { state = 'over'; overT = 0; esc.t = 99; esc.bikeX = 400; }
 
 // ---------- UPDATE ----------
+function updateEscape(dt) {
+  const e = esc, prev = e.t;
+  e.t += dt;
+  const T = e.t, at = s => prev < s && T >= s;
+  e.walking = false;
+  e.punchT = Math.max(0, e.punchT - dt);
+
+  if (T > .4 && T < 2.0) { e.kx = Math.min(150, e.kx + 70 * dt); e.walking = true; }
+  if (at(.8)) e.cw.vis = true;
+  if (at(1.2)) tone(300, .1, 'square', .12);
+  if (at(2.0)) { sGrowl(); addFloat("NE DEDİN SEN?!", e.kx + 16, 92, '#ff4040', 8, 1.4); }
+  if (T > 2.5 && T < 3.4) { e.kx = Math.max(72, e.kx - 95 * dt); e.walking = true; }
+  if (at(3.4)) {
+    e.punchT = .35; sPunch(); shake = .4;
+    burst(66, 132, 18, ['#fff', '#ffe14a', '#ff5050']);
+    addFloat("GÜÜÜM!", 60, 104, '#fff', 12, 1);
+    Object.assign(e.cw, {fly: true, vx: -120, vy: -170});
+  }
+  if (at(3.9)) laugh(true);
+  if (T > 4.6 && T < 5.6) { e.kx = Math.min(168, e.kx + 100 * dt); e.walking = true; }
+  if (at(5.6)) { e.mounted = true; sEngine(); addFloat("VROOOOOM!", 230, 100, '#ff5050', 8, 2); }
+  if (T > 5.9) {
+    e.bikeV += 140 * dt; e.bikeX += e.bikeV * dt;
+    if (Math.random() < .6) parts.push({x: e.bikeX + 6, y: 150, vx: -20 - Math.random() * 20, vy: -10, g: -15, life: .8, col: pick(['#666', '#888', '#555'])});
+  }
+  const c = e.cw;
+  if (c.fly) {
+    c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 420 * dt; c.rot -= 10 * dt;
+    if (c.x <= 6) { c.fly = false; c.inCan = true; sKlang(); shake = .2; addFloat("KLANG!", 18, 112, '#ccc', 6, 1); }
+  }
+  if (T >= 8.5) finishEscape();
+}
+
 function update(dt) {
   clock += dt;
   slapT = Math.max(0, slapT - dt); laughT = Math.max(0, laughT - dt); bangT = Math.max(0, bangT - dt);
   shake = Math.max(0, shake - dt); bellT = Math.max(0, bellT - dt); elevT = Math.max(0, elevT - dt);
+  guitarT = Math.max(0, guitarT - dt); guitarCD = Math.max(0, guitarCD - dt);
 
   for (const f of floats) { f.y += f.vy * dt; f.life -= dt; }
   floats = floats.filter(f => f.life > 0);
-  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.life -= dt; }
+  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.g ?? 300) * dt; p.life -= dt; }
   parts = parts.filter(p => p.life > 0);
+  for (const n of notes) { n.y += n.vy * dt; n.x += Math.sin(n.life * 8) * 12 * dt; n.life -= dt; }
+  notes = notes.filter(n => n.life > 0);
+
+  if (state === 'escape') { updateEscape(dt); return; }
 
   for (const g of leavers) {
     if (g.mode === 'fly') {
@@ -285,17 +373,21 @@ function update(dt) {
   }
   leavers = leavers.filter(g => !g.dead);
 
-  if (state === 'over') {
-    overT += dt;
-    if (overReason === 'bored') chopX += dt * (6 + overT * 18);
-    return;
-  }
+  if (state === 'over') { overT += dt; return; }
   if (state !== 'play') return;
 
   t += dt;
   boredom += (4 + t * .05) * dt;
   spawnT -= dt;
   if (spawnT <= 0) { spawn(); spawnT = Math.max(1.1, 3.2 - t * .03) * (.7 + Math.random() * .6); }
+
+  if (guitarT > 0) {
+    noteT -= dt;
+    if (noteT <= 0) {
+      noteT = .15;
+      notes.push({x: 244 + Math.random() * 30, y: 112, vy: -30 - Math.random() * 15, life: 1.3, col: pick(['#ff5aa0', '#ffe14a', '#7af', '#c080ff'])});
+    }
+  }
 
   const speed = 45 + t * .3;
   queue.forEach((g, i) => {
@@ -322,11 +414,11 @@ function update(dt) {
         addFloat("Tokatı kaçırdın!", 150, 100, '#aaa', 5, 1.4);
       }
     }
-  } else {
+  } else if (guitarT <= 0) {
     muttT -= dt;
     if (muttT <= 0) {
       muttT = 3 + Math.random() * 3;
-      if (boredom > 75) addFloat("ÇOK SIKILDIM LAN!", 256, 92, '#ff4040', 6, 1.6);
+      if (boredom > 75) addFloat(guitarCD <= 0 ? "ÇOK SIKILDIM! (C = GİTAR)" : "ÇOK SIKILDIM LAN!", 256, 92, '#ff4040', 6, 1.6);
       else addFloat(pick(MUTTERS), 256, 92, '#ccc', 5, 1.6);
     }
   }
@@ -353,26 +445,38 @@ function txt(s, x, y, size, col, align = 'left', ol = '#000') {
 }
 
 function wheel(cx, cy) {
-  rect(cx - 3, cy - 5, 6, 10, '#111'); rect(cx - 5, cy - 3, 10, 6, '#111'); rect(cx - 4, cy - 4, 8, 8, '#111');
-  rect(cx - 1, cy - 1, 2, 2, '#999');
+  rect(cx - 3, cy - 5, 6, 10, '#0a0a0a'); rect(cx - 5, cy - 3, 10, 6, '#0a0a0a'); rect(cx - 4, cy - 4, 8, 8, '#0a0a0a');
+  rect(cx - 2, cy - 2, 4, 4, '#555'); rect(cx - 1, cy - 1, 2, 2, '#bbb');
 }
-function drawChopper(x, y, rider) {
+function drawChopper(x, y) {
   wheel(x + 5, y + 12); wheel(x + 31, y + 12);
-  rect(x + 5, y + 6, 16, 2, '#333');
+  rect(x + 5, y + 6, 16, 2, '#1a1a1a');
   rect(x + 3, y + 11, 13, 2, '#ccc');
-  rect(x + 11, y + 7, 7, 5, '#888');
-  rect(x + 6, y + 4, 8, 2, '#2a1a10');
-  rect(x + 13, y + 2, 7, 4, '#c02030');
+  rect(x + 11, y + 7, 7, 5, '#2a2a2a'); rect(x + 12, y + 8, 5, 1, '#666');
+  rect(x + 6, y + 4, 8, 2, '#0a0a0a');
+  rect(x + 13, y + 2, 7, 4, '#111'); rect(x + 14, y + 2, 4, 1, '#666');
   for (let i = 0; i < 10; i++) rect(x + 21 + i, y + 2 + i, 2, 2, '#ccc');
   rect(x + 20, y - 6, 1, 8, '#ccc'); rect(x + 18, y - 6, 3, 1, '#ccc');
   rect(x + 22, y + 1, 2, 2, '#ffd');
-  if (rider) {
-    rect(x + 7, y - 4, 6, 8, '#151515');
-    rect(x + 8, y - 9, 5, 5, '#e0a070');
-    rect(x + 8, y - 10, 5, 2, '#151515');
-    rect(x + 11, y - 6, 3, 3, '#4a2a14');
-    rect(x + 12, y - 3, 8, 2, '#151515');
-  }
+}
+function drawChopperAt(x, y, sc) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); drawChopper(0, 0); ctx.restore();
+}
+function drawNote(n) {
+  ctx.globalAlpha = Math.min(1, n.life / .4);
+  rect(n.x, n.y, 3, 2, n.col); rect(n.x + 2, n.y - 5, 1, 5, n.col); rect(n.x + 3, n.y - 5, 2, 1, n.col);
+  ctx.globalAlpha = 1;
+}
+function speech(s, cx, y, border, tag) {
+  ctx.font = '5px ' + FONT;
+  const tw = tag ? 10 : 0;
+  const w = ctx.measureText(s).width + 8 + tw;
+  const bx = clamp(cx - w / 2, 2, W - w - 2);
+  rect(bx - 2, y - 2, w + 4, 16, border);
+  rect(bx, y, w, 12, '#fff');
+  rect(cx - 2, y + 12, 4, 2, '#fff'); rect(cx - 1, y + 14, 2, 2, '#fff');
+  txt(s, bx + 4, y + 4, 5, '#000', 'left', null);
+  if (tag) { rect(bx + w - 10, y + 2, 8, 8, border); txt(tag, bx + w - 6, y + 4, 5, '#fff', 'center', null); }
 }
 
 function drawRoom() {
@@ -392,15 +496,15 @@ function drawRoom() {
   txt("OTEL CEHENNEM", 160, 16, 8, on ? '#ff5aa0' : '#6a2a48', 'center', null);
   ctx.restore();
 
-  // window with chopper
+  // window with Khar's black chopper parked outside
   rect(98, 28, 52, 58, '#1a1020');
   ctx.save();
   ctx.beginPath(); ctx.rect(100, 30, 48, 54); ctx.clip();
-  rect(100, 30, 48, 48, '#24346a');
+  rect(100, 30, 48, 48, '#2c3e7a');
   rect(140, 34, 4, 4, '#ffeeb0');
   rect(110, 40, 1, 1, '#fff'); rect(128, 36, 1, 1, '#fff'); rect(120, 50, 1, 1, '#fff');
-  rect(100, 78, 48, 6, '#333');
-  drawChopper(108 + chopX, 62, kharGone);
+  rect(100, 78, 48, 6, '#444');
+  drawChopper(108, 62);
   ctx.restore();
   rect(123, 30, 2, 54, '#1a1020');
 
@@ -421,26 +525,40 @@ function drawRoom() {
   rect(53 + dw - 1, 61, 1, 67, '#778'); rect(87 - dw, 61, 1, 67, '#778');
   rect(64, 52, 12, 5, '#222'); rect(68, 53, 4, 3, elevT > 0 ? '#ff5' : '#553');
 
-  // metal poster
-  rect(282, 26, 32, 46, '#0a0a0a'); rect(282, 26, 32, 1, '#555');
-  drawSprite(SKULL, {W: '#eee'}, 288, 31, 2);
-  txt("\\m/", 298, 56, 6, '#d02030', 'center', null);
-  txt("METAL", 298, 64, 4, '#d02030', 'center', null);
+  // band poster
+  rect(281, 24, 34, 50, '#0a0a0a'); rect(281, 24, 34, 1, '#555');
+  drawSprite(SKULL, {W: '#eee'}, 288, 30, 2);
+  txt("STYGIAN", 298, 56, 4, '#d02030', 'center', null);
+  txt("\\m/", 298, 64, 5, '#888', 'center', null);
 }
 
 function drawKhar() {
-  if (kharGone) return;
   let ox = 0, oy = 0;
   if (bangT > 0) oy = Math.sin(bangT * 30) > 0 ? 4 : 0;
+  if (guitarT > 0) oy = Math.sin(clock * 28) > 0 ? 3 : 0;
   if (laughT > 0) { ox = Math.sin(clock * 60) > 0 ? 1 : -1; oy += Math.sin(clock * 25) > 0 ? -1 : 0; }
   const x = 240 + ox, y = 102 + oy;
+  if (guitarT > 0) {
+    // the "air" guitar: a faint ghost of a flying-V
+    ctx.globalAlpha = .3;
+    for (let i = 0; i < 12; i++) rect(x - 16 + i * 2, y + 22 + i, 3, 2, '#c080ff');
+    rect(x + 6, y + 32, 14, 6, '#c080ff'); rect(x + 18, y + 28, 6, 4, '#c080ff'); rect(x + 18, y + 38, 6, 4, '#c080ff');
+    ctx.globalAlpha = 1;
+  }
   drawSprite(KHAR, KPAL, x, y, 2);
-  if (laughT > 0) {
+  if (laughT > 0 || guitarT > 0) {
     rect(x + 11, y + 17, 10, 7, '#300');
     rect(x + 12, y + 17, 8, 2, '#fff');
     rect(x + 13, y + 22, 6, 2, '#c33');
   } else if (boredom > 70 && state === 'play') {
     rect(x + 12, y + 18, 8, 2, '#300');
+  }
+  if (guitarT > 0) {
+    // fretting hand up the neck, strumming hand at the belly
+    for (let i = 0; i < 4; i++) rect(x + 2 - i * 4, y + 30 - i * 2, 5, 4, KPAL.S);
+    rect(x - 16, y + 22, 5, 5, KPAL.S);
+    const sy = Math.sin(clock * 40) > 0 ? 0 : 4;
+    rect(x + 22, y + 34, 6, 4, KPAL.S); rect(x + 16, y + 32 + sy, 6, 5, KPAL.S);
   }
   if (slapT > 0) {
     const ax = 184, ay = y + 26;
@@ -474,6 +592,13 @@ function drawGuest(g) {
   drawSprite(fr ? T.rowsB : T.rowsA, T.pal, 0, 0, 2);
   if (g.type === 'mufettis') { rect(18, 18, 7, 9, '#7a4a28'); rect(19, 19, 5, 7, '#fff'); rect(20, 21, 3, 1, '#888'); rect(20, 23, 3, 1, '#888'); }
   if (g.type === 'metalci') { rect(2, 14, 2, 6, '#111'); rect(20, 14, 2, 6, '#111'); }
+  if (g.type === 'necmi') { rect(4, 16, 1, 6, '#e0c040'); rect(19, 16, 1, 6, '#e0c040'); }
+  // anger vein over the annoying ones so they are easy to spot in the queue
+  if (T.good === 'slap' && !g.mode) {
+    const p = Math.sin(clock * 10) > 0 ? 1 : 0;
+    rect(18 - p, -6 - p, 2, 4 + p * 2, '#ff2a2a'); rect(22 + p, -6 - p, 2, 4 + p * 2, '#ff2a2a');
+    rect(19, -7 - p, 4, 2, '#ff2a2a'); rect(19, -1 + p, 4, 2, '#ff2a2a');
+  }
   if (g.mode === 'key' || g.mode === 'elev') { rect(9, -8, 4, 4, '#ffe14a'); rect(13, -7, 6, 2, '#ffe14a'); rect(17, -5, 2, 2, '#ffe14a'); }
   if (g.mode === 'storm') { rect(11, -10, 2, 6, '#ff4040'); rect(11, -3, 2, 2, '#ff4040'); }
   if (g.mode === 'fly') for (let i = 0; i < 3; i++) rect(4 + i * 7, -4 + Math.sin(clock * 20 + i) * 2, 2, 2, '#ffe14a');
@@ -483,13 +608,8 @@ function drawGuest(g) {
 function drawBubble() {
   const g = queue[0];
   if (!g || !g.arrived) return;
-  ctx.font = '5px ' + FONT;
-  const w = ctx.measureText(g.line).width + 8;
-  const bx = clamp(g.x + 12 - w / 2, 2, 190 - w), by = 100;
-  rect(bx - 1, by - 1, w + 2, 14, '#000');
-  rect(bx, by, w, 12, '#fff');
-  rect(g.x + 10, by + 12, 4, 2, '#fff'); rect(g.x + 11, by + 14, 2, 2, '#fff');
-  txt(g.line, bx + 4, by + 4, 5, '#000', 'left', null);
+  const slap = TYPES[g.type].good === 'slap';
+  speech(g.line, g.x + 12, 98, slap ? '#d02030' : '#2a9a3a', slap ? 'Z' : 'X');
   const r = 1 - g.pat / g.patMax;
   rect(g.x, 117, 24, 3, '#000');
   rect(g.x + 1, 118, 22 * r, 1, r > .5 ? '#5f5' : r > .25 ? '#fd4' : '#f44');
@@ -508,52 +628,133 @@ function drawHUD() {
   rect(52, 168, 124, 9, '#000');
   const bc = boredom > 75 ? '#ff3030' : boredom > 50 ? '#ffb030' : '#50d060';
   rect(54, 170, 120 * boredom / 100, 5, bc);
+  // air guitar cooldown
+  if (guitarCD <= 0) txt("C=GİTAR", 182, 170, 5, Math.sin(clock * 6) > -.3 ? '#c080ff' : '#7a50a0');
+  else { rect(182, 169, 44, 7, '#000'); rect(183, 170, 42 * (1 - guitarCD / 12), 5, '#6a3aa8'); }
   if (combo > 1) txt("KOMBO x" + combo, 316, 169, 6, '#ffe14a', 'right');
+}
+
+// ----- escape scene (street) -----
+function drawStreet() {
+  rect(0, 0, W, 160, '#14142e');
+  for (let i = 0; i < 34; i++) rect((i * 73) % W, (i * 37) % 95, 1, 1, i % 3 ? '#88a' : '#fff');
+  rect(274, 12, 8, 12, '#ffeeb0'); rect(272, 14, 12, 8, '#ffeeb0'); rect(275, 15, 2, 2, '#e0d090'); rect(279, 19, 2, 2, '#e0d090');
+  for (const [x, y, w] of [[128, 92, 24], [154, 72, 20], [176, 98, 30], [208, 62, 18], [228, 86, 26], [256, 76, 22], [280, 94, 40]]) {
+    rect(x, y, w, 160 - y, '#1f1f40');
+    for (let wy = y + 6; wy < 150; wy += 10) for (let wx = x + 4; wx < x + w - 4; wx += 8)
+      if (((wx * 7 + wy * 3) % 5) === 0) rect(wx, wy, 3, 4, '#d8b860');
+  }
+  // hotel facade
+  rect(0, 30, 124, 130, '#3a2448'); rect(0, 30, 124, 3, '#5a3a6a');
+  ctx.save();
+  ctx.shadowColor = '#ff3a8a'; ctx.shadowBlur = 10;
+  txt("OTEL CEHENNEM", 62, 38, 6, '#ff5aa0', 'center', null);
+  ctx.restore();
+  for (const [x, y] of [[8, 54], [32, 54], [80, 54], [100, 54], [8, 78], [100, 78]])
+    rect(x, y, 14, 14, (x + y) % 3 ? '#e8c060' : '#24182e');
+  rect(38, 98, 36, 62, '#5a3a20'); rect(41, 101, 30, 59, '#ffd890');
+  // lamp
+  rect(214, 88, 3, 72, '#444'); rect(208, 86, 15, 4, '#555'); rect(210, 90, 11, 2, '#ffe9a0');
+  ctx.globalAlpha = .08; ctx.fillStyle = '#ffe9a0';
+  ctx.beginPath(); ctx.moveTo(210, 92); ctx.lineTo(221, 92); ctx.lineTo(250, 160); ctx.lineTo(181, 160); ctx.fill();
+  ctx.globalAlpha = 1;
+  // sidewalk + road
+  rect(0, 160, W, 4, '#666'); rect(0, 164, W, 16, '#262626');
+  for (let x = 0; x < W; x += 24) rect(x, 171, 12, 2, '#c0a020');
+  // trash cans
+  for (const x of [2, 16]) { rect(x, 140, 12, 20, '#6a7078'); rect(x - 1, 138, 14, 3, '#8a9098'); rect(x + 3, 143, 1, 15, '#58606a'); rect(x + 8, 143, 1, 15, '#58606a'); }
+}
+
+function drawEscape() {
+  const e = esc;
+  drawStreet();
+  const c = e.cw;
+  if (c.inCan) {
+    const w = Math.sin(clock * 14) > 0 ? 1 : 0;
+    rect(4, 126 + w, 3, 12, '#222'); rect(9, 124 - w, 3, 14, '#222');
+    rect(3, 123 + w, 5, 3, '#111'); rect(8, 121 - w, 5, 3, '#111');
+  } else if (c.vis) {
+    drawGuest({type: 'necmi', x: c.x, y: c.y, walk: 0, alpha: 1, rot: c.fly ? c.rot : 0, mode: c.fly ? 'fly' : undefined});
+  }
+  if (e.mounted) {
+    drawSprite(KHAR, KPAL, e.bikeX + 4, 94, 2);
+    rect(e.bikeX + 30, 120, 12, 4, KPAL.S);
+    drawChopperAt(e.bikeX, 126, 2);
+  } else {
+    drawChopperAt(e.bikeX, 126, 2);
+    const fr = e.walking ? Math.floor(e.t * 8) % 2 : 0;
+    const ky = 104 - (e.walking && fr ? 1 : 0);
+    drawSprite(fr ? KFULL_B : KFULL_A, KPAL, e.kx, ky, 2);
+    if (laughT > 0) { rect(e.kx + 11, ky + 17, 10, 7, '#300'); rect(e.kx + 12, ky + 17, 8, 2, '#fff'); }
+    if (e.punchT > 0) {
+      rect(e.kx - 12, ky + 26, 14, 6, KPAL.S);
+      rect(e.kx - 19, ky + 24, 8, 10, KPAL.S); rect(e.kx - 19, ky + 24, 2, 10, '#c08050');
+      for (let i = 0; i < 3; i++) rect(e.kx + 2, ky + 20 + i * 6, 12, 1, '#fff');
+    }
+  }
+  if (c.vis && !c.fly && !c.inCan && e.t > 1.2 && e.t < 2.9) speech("Yine mi kaçıyorsun Khar?! Korkak!", c.x + 12, 104, '#c02030');
 }
 
 function drawTitle() {
   rect(0, 0, W, H, 'rgba(10,6,16,.86)');
-  txt("KHAR'IN OTELİ", 160, 10, 14, '#ffe14a', 'center');
-  txt("8-BIT RESEPSİYON KAOSU", 160, 30, 6, '#ff5aa0', 'center');
-  drawSprite(KHAR, KPAL, 18, 46, 3);
-  txt("HUEHEHE!", 42, 108, 5, '#ffe14a', 'center');
+  txt("KHAR'IN OTELİ", 160, 8, 14, '#ffe14a', 'center');
+  txt("8-BIT RESEPSİYON KAOSU", 160, 28, 6, '#ff5aa0', 'center');
+  drawSprite(KHAR, KPAL, 18, 44, 3);
+  txt("HUEHEHE!", 42, 106, 5, '#ffe14a', 'center');
   const lineup = [['karen', 'KAREN', 'slap'], ['zilci', 'ZİLCİ', 'slap'], ['turist', 'TURİST', 'key'], ['metalci', 'METALCİ', 'key'], ['mufettis', 'MÜFETTİŞ', 'key']];
   lineup.forEach(([type, name, act], i) => {
     const x = 92 + i * 44;
-    drawGuest({type, x, y: 48, walk: 0, alpha: 1});
-    txt(name, x + 12, 88, 4, '#ddd', 'center');
-    txt(act === 'slap' ? "TOKAT!" : "ANAHTAR", x + 12, 96, 5, act === 'slap' ? '#ff5050' : '#60e070', 'center');
+    drawGuest({type, x, y: 50, walk: 0, alpha: 1});
+    txt(name, x + 12, 90, 4, '#ddd', 'center');
+    txt(act === 'slap' ? "TOKAT!" : "ANAHTAR", x + 12, 97, 5, act === 'slap' ? '#ff5050' : '#60e070', 'center');
   });
-  txt("Z / SPACE = TOKAT   X / ENTER = ANAHTAR", 160, 118, 5, '#fff', 'center');
-  txt("Sıkıntı dolarsa Khar motoruna atlar gider!", 160, 130, 5, '#ccc', 'center');
-  txt("3 şikayet = KOVULDUN  ·  5 kombo = DELİ KAHKAHA", 160, 139, 4, '#ccc', 'center');
-  txt("Müfettişi tokatlama! (2 şikayet)", 160, 147, 4, '#ff8080', 'center');
+  txt("Z = TOKAT    X = ANAHTAR    C = HAVA GİTARI", 160, 112, 5, '#fff', 'center');
+  txt("Kafasında kırmızı damar + kırmızı balon = TOKATLA", 160, 123, 4, '#ff8080', 'center');
+  txt("Yeşil balon = ANAHTAR VER (müfettişi tokatlama!)", 160, 131, 4, '#80e090', 'center');
+  txt("Sıkıntı dolarsa Khar motoruna atlar gider!", 160, 139, 4, '#ccc', 'center');
+  txt("3 şikayet = KOVULDUN  ·  5 kombo = DELİ KAHKAHA", 160, 147, 4, '#ccc', 'center');
   if (Math.sin(clock * 6) > -.3) txt("BAŞLAMAK İÇİN Z'YE BAS", 160, 158, 7, '#ffe14a', 'center');
   if (best) txt("REKOR " + best, 160, 171, 5, '#9a8aa8', 'center');
 }
 
 function drawOver() {
-  let a = .8;
-  if (overReason === 'bored') a = clamp((overT - 2.2) * 1.5, 0, .82);
-  if (a <= 0) return;
-  ctx.globalAlpha = a / .82;
+  ctx.globalAlpha = clamp(overT * 2, 0, 1);
   rect(0, 0, W, H, 'rgba(10,6,16,.82)');
   if (overReason === 'bored') {
-    txt("KHAR SIKILDI!", 160, 40, 14, '#ff5050', 'center');
-    txt("Chopper'ına atlayıp gitti. VROOOM!", 160, 64, 6, '#ddd', 'center');
+    txt("KHAR SIKILDI!", 160, 36, 14, '#ff5050', 'center');
+    txt("Chopper'ına atlayıp gitti. VROOOM!", 160, 60, 6, '#ddd', 'center');
+    txt("(Necmi hâlâ çöp kutusunda.)", 160, 72, 5, '#999', 'center');
   } else {
     txt("KOVULDUN!", 160, 40, 14, '#ff5050', 'center');
     txt("Çok fazla şikayet geldi...", 160, 64, 6, '#ddd', 'center');
   }
-  txt("PUAN  " + score, 160, 88, 8, '#fff', 'center');
-  txt("REKOR " + best, 160, 102, 8, score >= best && score > 0 ? '#ffe14a' : '#aaa', 'center');
+  txt("PUAN  " + score, 160, 90, 8, '#fff', 'center');
+  txt("REKOR " + best, 160, 104, 8, score >= best && score > 0 ? '#ffe14a' : '#aaa', 'center');
   if (overT > 1 && Math.sin(clock * 6) > -.3) txt("TEKRAR İÇİN Z'YE BAS", 160, 132, 7, '#ffe14a', 'center');
+  ctx.globalAlpha = 1;
+}
+
+function drawFloats() {
+  for (const f of floats) {
+    ctx.globalAlpha = Math.min(1, f.life / .3);
+    ctx.font = f.size + 'px ' + FONT;
+    const w = ctx.measureText(f.txt).width;
+    txt(f.txt, clamp(f.x, w / 2 + 2, W - w / 2 - 2), f.y, f.size, f.col, 'center');
+  }
   ctx.globalAlpha = 1;
 }
 
 function draw() {
   const sx = shake > 0 ? (Math.random() * 4 - 2) : 0, sy = shake > 0 ? (Math.random() * 4 - 2) : 0;
   ctx.setTransform(S, 0, 0, S, sx * S, sy * S);
+  if (state === 'escape' || (state === 'over' && overReason === 'bored')) {
+    drawEscape();
+    for (const p of parts) rect(p.x, p.y, 2, 2, p.col);
+    drawFloats();
+    if (state === 'escape' && esc.t > 1) txt("Z = GEÇ", 316, 4, 4, '#777', 'right');
+    if (state === 'over') drawOver();
+    return;
+  }
   drawRoom();
   drawKhar();
   drawDesk();
@@ -562,13 +763,8 @@ function draw() {
     for (const g of leavers) drawGuest(g);
     if (state === 'play') drawBubble();
     for (const p of parts) rect(p.x, p.y, 2, 2, p.col);
-    for (const f of floats) {
-      ctx.globalAlpha = Math.min(1, f.life / .3);
-      ctx.font = f.size + 'px ' + FONT;
-      const w = ctx.measureText(f.txt).width;
-      txt(f.txt, clamp(f.x, w / 2 + 2, W - w / 2 - 2), f.y, f.size, f.col, 'center');
-    }
-    ctx.globalAlpha = 1;
+    for (const n of notes) drawNote(n);
+    drawFloats();
     drawHUD();
   }
   if (state === 'title') drawTitle();
@@ -581,8 +777,9 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'z' || k === ' ' || k === 'a') { e.preventDefault(); initAudio(); act('slap'); }
   else if (k === 'x' || k === 'enter' || k === 's') { e.preventDefault(); initAudio(); act('key'); }
+  else if (k === 'c' || k === 'd') { e.preventDefault(); initAudio(); act('guitar'); }
 });
-for (const [id, kind] of [['bSlap', 'slap'], ['bKey', 'key']])
+for (const [id, kind] of [['bSlap', 'slap'], ['bKey', 'key'], ['bGtr', 'guitar']])
   document.getElementById(id).addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); act(kind); });
 cv.addEventListener('pointerdown', () => { if (state !== 'play') { initAudio(); act('slap'); } });
 
