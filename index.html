@@ -156,12 +156,42 @@ const sWhiff = () => noise(.12, .25, 800);
 const sKey   = () => { tone(880, .08, 'square', .2); tone(1320, .12, 'square', .2, .08); };
 const sDing  = () => { tone(1760, .5, 'sine', .25); tone(2640, .3, 'sine', .08); };
 const sBad   = () => { tone(220, .15, 'sawtooth', .25); tone(160, .3, 'sawtooth', .25, .15); };
-function sLaugh(big) {
-  const n = big ? 12 : 5;
-  for (let i = 0; i < n; i++) {
-    const f = (i % 3 === 2 ? 520 : 300 + Math.random() * 180) * (big && i > n - 4 ? 1.6 : 1);
-    tone(f, .08, 'square', .22, i * .1, f * .7);
+// one 8-bit "voice" syllable: breathy "h" + square wave through a vowel filter
+// formant ~600 = "HÖ", ~1100 = "HA", ~1900 = "HE"
+function syl(f0, f1, when, dur, formant, vibRate = 0, vibDepth = 0, vol = .8) {
+  if (!AC) return;
+  noise(.035, .18, 1800, when);
+  const t0 = AC.currentTime + when + .02;
+  const o = AC.createOscillator(), flt = AC.createBiquadFilter(), g = AC.createGain();
+  o.type = 'square';
+  o.frequency.setValueAtTime(f0, t0);
+  o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  if (vibRate) {
+    const v = AC.createOscillator(), vg = AC.createGain();
+    v.frequency.value = vibRate; vg.gain.value = vibDepth;
+    v.connect(vg); vg.connect(o.frequency); v.start(t0); v.stop(t0 + dur);
   }
+  flt.type = 'bandpass'; flt.frequency.value = formant; flt.Q.value = 1.6;
+  g.gain.setValueAtTime(.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + .015);
+  g.gain.exponentialRampToValueAtTime(.001, t0 + dur);
+  o.connect(flt); flt.connect(g); g.connect(master);
+  o.start(t0); o.stop(t0 + dur + .02);
+}
+function sLaugh(big) {
+  const j = () => .9 + Math.random() * .2;
+  if (!big) {
+    // "HUE-HE-HE-HE!"
+    [[260, 600], [300, 1900], [290, 1900], [280, 1900]].forEach(([f, fm], i) => syl(f * j(), f * .8, i * .11, .09, fm));
+    return;
+  }
+  // "HÖ HÖ HÖ - AHAHAHA - HUE HE HE - HEEEEEE!"
+  let w = 0;
+  for (let i = 0; i < 3; i++) { syl(170 * j(), 140, w, .14, 600); w += .17; }
+  w += .06;
+  for (let i = 0; i < 4; i++) { syl((220 + i * 20) * j(), 190 + i * 20, w, .09, 1100); w += .11; }
+  for (let i = 0; i < 3; i++) { syl((300 + i * 15) * j(), 260, w, .08, 1900); w += .1; }
+  syl(380, 720, w, .7, 2300, 9, 35, .7);
 }
 function sRiff() {
   if (!AC) return;
