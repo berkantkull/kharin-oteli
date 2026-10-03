@@ -237,7 +237,7 @@ function airGuitar() {
   if (guitarT > 0) return;
   if (guitarCD > 0) { addFloat("Gitar soğuyor...", 256, 92, '#aaa', 5, 1); return; }
   guitarT = 2.2; guitarCD = 12; noteT = 0;
-  boredom = clamp(boredom - 35, 0, 100); score += 10;
+  boredom = clamp(boredom - 12, 0, 100); score += 10;
   sGuitar();
   addFloat("HAVA GİTARI SOLOSU!", 256, 86, '#c080ff', 7, 1.6);
 }
@@ -593,12 +593,6 @@ function drawGuest(g) {
   if (g.type === 'mufettis') { rect(18, 18, 7, 9, '#7a4a28'); rect(19, 19, 5, 7, '#fff'); rect(20, 21, 3, 1, '#888'); rect(20, 23, 3, 1, '#888'); }
   if (g.type === 'metalci') { rect(2, 14, 2, 6, '#111'); rect(20, 14, 2, 6, '#111'); }
   if (g.type === 'necmi') { rect(4, 16, 1, 6, '#e0c040'); rect(19, 16, 1, 6, '#e0c040'); }
-  // anger vein over the annoying ones so they are easy to spot in the queue
-  if (T.good === 'slap' && !g.mode) {
-    const p = Math.sin(clock * 10) > 0 ? 1 : 0;
-    rect(18 - p, -6 - p, 2, 4 + p * 2, '#ff2a2a'); rect(22 + p, -6 - p, 2, 4 + p * 2, '#ff2a2a');
-    rect(19, -7 - p, 4, 2, '#ff2a2a'); rect(19, -1 + p, 4, 2, '#ff2a2a');
-  }
   if (g.mode === 'key' || g.mode === 'elev') { rect(9, -8, 4, 4, '#ffe14a'); rect(13, -7, 6, 2, '#ffe14a'); rect(17, -5, 2, 2, '#ffe14a'); }
   if (g.mode === 'storm') { rect(11, -10, 2, 6, '#ff4040'); rect(11, -3, 2, 2, '#ff4040'); }
   if (g.mode === 'fly') for (let i = 0; i < 3; i++) rect(4 + i * 7, -4 + Math.sin(clock * 20 + i) * 2, 2, 2, '#ffe14a');
@@ -608,8 +602,7 @@ function drawGuest(g) {
 function drawBubble() {
   const g = queue[0];
   if (!g || !g.arrived) return;
-  const slap = TYPES[g.type].good === 'slap';
-  speech(g.line, g.x + 12, 98, slap ? '#d02030' : '#2a9a3a', slap ? 'Z' : 'X');
+  speech(g.line, g.x + 12, 98, '#000');
   const r = 1 - g.pat / g.patMax;
   rect(g.x, 117, 24, 3, '#000');
   rect(g.x + 1, 118, 22 * r, 1, r > .5 ? '#5f5' : r > .25 ? '#fd4' : '#f44');
@@ -709,8 +702,8 @@ function drawTitle() {
     txt(act === 'slap' ? "TOKAT!" : "ANAHTAR", x + 12, 97, 5, act === 'slap' ? '#ff5050' : '#60e070', 'center');
   });
   txt("Z = TOKAT    X = ANAHTAR    C = HAVA GİTARI", 160, 112, 5, '#fff', 'center');
-  txt("Kafasında kırmızı damar + kırmızı balon = TOKATLA", 160, 123, 4, '#ff8080', 'center');
-  txt("Yeşil balon = ANAHTAR VER (müfettişi tokatlama!)", 160, 131, 4, '#80e090', 'center');
+  txt("Sinir bozucuları tokatla, iyilere anahtar ver!", 160, 123, 4, '#ddd', 'center');
+  txt("Müfettişi tokatlama! (2 şikayet)", 160, 131, 4, '#ff8080', 'center');
   txt("Sıkıntı dolarsa Khar motoruna atlar gider!", 160, 139, 4, '#ccc', 'center');
   txt("3 şikayet = KOVULDUN  ·  5 kombo = DELİ KAHKAHA", 160, 147, 4, '#ccc', 'center');
   if (Math.sin(clock * 6) > -.3) txt("BAŞLAMAK İÇİN Z'YE BAS", 160, 158, 7, '#ffe14a', 'center');
